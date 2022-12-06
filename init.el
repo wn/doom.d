@@ -2,6 +2,7 @@
 (doom!
       :completion
       (vertico +orderless +icons)
+      company
 
       :ui
       doom              ; what makes DOOM look the way it does
