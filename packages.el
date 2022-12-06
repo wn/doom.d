@@ -1,11 +1,8 @@
 ;; -*- no-byte-compile: t; -*-
 
 (package! ace-window)
-(package! cape)
 (package! citar)
-(package! company)
-(package! corfu)
-(package! corfu-doc)
+(package! company-posframe)
 (package! ctrlf)
 (package! deadgrep)
 (package! dired-narrow)

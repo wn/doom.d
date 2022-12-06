@@ -3,7 +3,7 @@
       user-mail-address "weineng@twosigma.com"
       doom-scratch-buffer-major-mode 'org-mode
       doom-font (font-spec :family "JetBrains Mono" :size 14 :weight 'light)
-      doom-variable-pitch-font (font-spec :family "JetBrains Mono" :weight 'light)
+      doom-variable-pitch-font (font-spec :family "Roboto" :weight 'light)
       doom-serif-font (font-spec :family "Iosevka" :weight 'light)
       doom-theme 'doom-dracula
       display-line-numbers-type t
@@ -31,35 +31,9 @@
 ;; (map! "M-s" #'ligma-get-sourcegraph-url)
 ;; (map! "M-r" 'ligma-list-tstest-all))
 
-;; Reset lsp-completion provider
-(add-hook 'doom-init-modules-hook
-          (lambda ()
-            (after! lsp-mode
-              (setq lsp-completion-provider :none))))
-
-(add-hook 'lsp-after-open-hook 'lsp-ui-mode)
-
-;; Pad before lsp modeline error info
-(add-hook 'lsp-mode-hook
-          (lambda ()
-            (setf (caadr
-                   (assq 'global-mode-string mode-line-misc-info))
-                  " "))
-          'company-mode)
-
-;; Set orderless filtering for LSP-mode completions
-(add-hook 'lsp-completion-mode-hook
-          (lambda ()
-            (dolist (dir '("*c/include/*"))
-              (push dir lsp-file-watch-ignored-directories))
-            (setq lsp-completion-enable t)
-            (setf (alist-get 'lsp-capf completion-category-defaults) '((styles . (orderless))))))
-
 (map! :map pdf-isearch-minor-mode-map "C-s" #'isearch-forward)
 (map! :map pdf-isearch-minor-mode-map "C-r" #'isearch-backward)
 (map! "C-s" #'+default/search-buffer)
-
-(use-package company)
 
 (use-package! parinfer-rust-mode
   :hook emacs-lisp-mode)
@@ -70,39 +44,11 @@
   (map! :map dired-mode-map
         :desc "narrow" "/" #'dired-narrow-fuzzy))
 
-(defun dw/minibuffer-backward-kill (arg)
-  "When minibuffer is completing a file name delete up to parent folder, otherwise delete a word."
-  (interactive "p")
-  (if minibuffer-completing-file-name
-      ;; Borrowed from https://github.com/raxod502/selectrum/issues/498#issuecomment-803283608
-      (if (string-match-p "/." (minibuffer-contents))
-          (zap-up-to-char (- arg) ?/)
-        (delete-minibuffer-contents))
-      (backward-kill-word arg)))
-
-(use-package vertico
-  :bind (:map vertico-map
-         :map minibuffer-local-map
-         ("M-h" . dw/minibuffer-backward-kill))
-  :custom
-  (vertico-cycle t)
-  :custom-face
-  (vertico-current ((t (:background "#3a3f5a"))))
+(use-package company
+  :defer t
+  :ensure t
   :init
-  (vertico-mode))
-
-(use-package! orderless
-  :when (featurep! +orderless)
-  :init
-  (setq completion-styles '(orderless)
-        completion-category-defaults nil
-        completion-category-overrides '((file (styles . (partial-completion))))))
-
-(use-package! cape
-  :init
-  (add-to-list 'completion-at-point-functions #'cape-file)
-  (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-keyword))
+  (setq company-idle-delay nil))
 
 (use-package ace-window
   :ensure t
@@ -130,7 +76,7 @@
 (use-package! magit
   :config
   (map!"C-c B" #'magit-blame-addition)
-  (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview))
+  (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview))yy
 
 (use-package! org-roam
   :init
@@ -208,15 +154,10 @@
   (setq dired-use-ls-dired nil))
 
 ;; resize window
-(global-set-key (kbd "C-<up>") (lambda () (interactive) (shrink-window 5)))
-(global-set-key (kbd "C-<down>") (lambda () (interactive) (enlarge-window 5)))
+(global-set-key (kbd "C-<up>") (lambda () (interactive) (enlarge-window 5)))
+(global-set-key (kbd "C-<down>") (lambda () (interactive) (shrink-window 5)))
 (global-set-key (kbd "C-<left>") (lambda () (interactive) (shrink-window-horizontally 5)))
 (global-set-key (kbd "C-<right>") (lambda () (interactive) (enlarge-window-horizontally 5)))
-
-(defun insert-date ()
-  "Insert a timestamp according to locale's date and time format."
-  (interactive)
-  (insert (format-time-string "%c" (current-time))))
 
 (defun align-non-space (BEG END)
   "Align non-space columns in region BEG END."
@@ -226,7 +167,7 @@
 (map! "M-z" #'undo-redo
       "C-z" #'undo-only
       "M-/" #'comment-line
-      "C-/" #'completion-at-point)
+      "C-/" #'+company/complete)
 
 (map!
  [C-tab] #'+fold/toggle
