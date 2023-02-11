@@ -2,14 +2,14 @@
 (doom!
       :completion
       (vertico +orderless +icons)
-      company
+      (company +childframe)
 
       :ui
       doom              ; what makes DOOM look the way it does
       doom-dashboard    ; a nifty splash screen for Emacs
       hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
       indent-guides     ; highlighted indent columns
-      modeline          ; snazzy, Atom-inspired modeline, plus API
+      (modeline +light)          ; snazzy, Atom-inspired modeline, plus API
       nav-flash         ; blink cursor line after big motions
       ophints           ; highlight the region an operation acts on
       (popup +defaults)   ; tame sudden yet inevitable temporary windows
@@ -48,8 +48,11 @@
       markdown          ; writing docs for people to ignore
       nix               ; I hereby declare "nix geht mehr!"
       org               ; organize your plain life in plain text
-      (python +lsp +pyright)            ; beautiful is better than ugly
+      (python +pyright +lsp)            ; beautiful is better than ugly
       (rust +lsp)              ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
 
       :config
-      (default +bindings +smartparens))
+      (default +bindings)
+
+      :app
+      (rss +org))
