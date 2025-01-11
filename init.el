@@ -9,7 +9,7 @@
       doom-dashboard    ; a nifty splash screen for Emacs
       hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
       indent-guides     ; highlighted indent columns
-      (modeline +light)          ; snazzy, Atom-inspired modeline, plus API
+      modeline          ; snazzy, Atom-inspired modeline, plus API
       nav-flash         ; blink cursor line after big motions
       ophints           ; highlight the region an operation acts on
       (popup +defaults)   ; tame sudden yet inevitable temporary windows
@@ -32,7 +32,8 @@
       vterm             ; the best terminal emulation in Emacs
 
       :checkers
-      syntax              ; tasing you for every semicolon you forget
+      (syntax +childframe)              ; tasing you for every semicolon you forget
+      ;; (spell + aspell)
 
       :tools
       (eval +overlay)     ; run code, run (also, repls)
@@ -40,7 +41,7 @@
       lsp               ; M-x vscode
       magit             ; a git porcelain for Emacs
       make              ; run make tasks from Emacs
-      pdf               ; pdf enhancements
+      ;; pdf               ; pdf enhancements
       :lang
       (cc +lsp)         ; C > C++ == 1
       data              ; config/data formats

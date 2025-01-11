@@ -3,7 +3,7 @@
       user-mail-address "weineng.a@gmail.com"
       doom-scratch-buffer-major-mode 'org-mode
       doom-font (font-spec :family "JetBrains Mono" :size 14 :weight 'light)
-      doom-big-font (font-spec :family "JetBrains Mono" :size 24)
+      doom-big-font (font-spec :family "JetBrains Mono" :size 14)
       doom-variable-pitch-font (font-spec :family "Roboto" :weight 'light)
       doom-serif-font (font-spec :family "Iosevka" :weight 'light)
       doom-theme 'doom-dracula
@@ -11,15 +11,39 @@
       load-prefer-newer t
       writeroom-extra-line-spacing 0.3
 
-      lsp-ui-sideline-enable nil
-      lsp-enable-symbol-highlighting nil
+      visual-fill-column-width 110
+      visual-fill-column-center-text t
+
+      indent-tabs-mode nil
       search-highlight t
       search-whitespace-regexp ".*?")
 
-(use-package flycheck-clang-analyzer
-  :ensure t
-  :after flycheck
-  :config (flycheck-clang-analyzer-setup))
+(use-package clang-format
+  :init
+  (setq clang-format-style "file"))
+
+(use-package! flycheck
+  :init
+  :config
+  (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
+  (setq flycheck-clang-language-standard "c++2a"
+        flycheck-gcc-language-standard "c++2a"
+        flycheck-clang-args '("-std=c++2a" "-O0" "-march=native" "-g")))
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
+
+(use-package! magit-delta
+  :after magit
+  :hook
+  (magit-mode . magit-delta-mode)
+  :config
+  (setq
+    magit-delta-default-dark-theme "Dracula"
+    magit-delta-default-light-theme "Github"
+    magit-delta-hide-plus-minus-markers nil))
 
 (use-package! multiple-cursors
   :config
@@ -28,14 +52,35 @@
 
 (use-package! lsp-mode
   :hook
-  (python-mode . lsp)
+  (python-ts-mode . lsp)
+  (c++-ts-mode . lsp)
+  :init
+  (setq lsp-enable-symbol-highlighting t
+        lsp-signature-render-documentation t
+        lsp-lens-enable nil
+        lsp-eldoc-enable-hover t
+        lsp-inhibit-message t
+        lsp-message-project-root-warning t))
+
+(use-package! lsp-ui
+  :after lsp-mode
+  :init
+  (setq lsp-ui-sideline-enable nil
+        lsp-ui-sideline-wait-for-all-symbols nil
+        lsp-ui-sideline-show-hover nil)
   :config
-  (map! "M-s" #'lsp-ui-doc-glance))
+  ;; (lsp-ui-sideline-mode)
+  ;; (lsp-ui-sideline-toggle-symbols-info)
+  (lsp-ui-mode))
 
 (use-package! ox-reveal
   :init
   (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js"
         org-reveal-mathjax t))
+
+(use-package! swiper
+  :init
+  (setq swiper-action-recenter t))
 
 (use-package edraw-org
   :config
@@ -61,61 +106,61 @@
 
 (use-package company
   :after lsp-mode
+  :init
+  (setq lsp-inhibit-message nil
+        lsp-message-project-root-warning nil)
   :hook (lsp-mode . company-mode)
   :hook (company-mode . company-box-mode)
   :bind (:map company-active-map
-         ("<tab>" . company-complete-selection))
+         ("<tab>" . company-complete-selection)
+         ("TAB" . company-complete-selection)
+         ("<return>" . nil)
+         ("RET" . nil))
   :custom
-  (company-minimum-prefix-length 1)
-  (company-tooltip-width-grow-only t)
-  (company-tooltip-maximum-width 120)
-  (company-tooltip-align-annotations t)
-  (company-require-match 'never)
-  ;; Disable company in the following modes
-  (company-global-modes '(not shell-mode eaf-mode))
-  (company-idle-delay 0.1)
-  ;; Number the candidates (use M-1, M-2 etc to select completions)
-  (company-show-numbers t)
-  (company-selection-wrap-around t)
-  (company-box-doc-delay 1))
-
-(use-package ace-window
-  :ensure t
-  :init
-  (progn
-    (global-set-key (kbd "M-o") 'ace-window)
-    (custom-set-faces
-     '(aw-leading-char-face
-       ((t (:inherit ace-jump-face-foreground :height 3.0)))))))
+  (setq completion-ignore-case t
+        company-minimum-prefix-length 1
+        company-tooltip-width-grow-only t
+        company-tooltip-maximum-width 120
+        company-tooltip-align-annotations t
+        company-require-match 'never
+        company-global-modes '(not erc-mode message-mode eshell-mode)
+        company-idle-delay 0
+        ;; Number the candidates (use M-1, M-2 etc to select completions)
+        company-show-numbers t
+        company-selection-wrap-around t
+        company-box-doc-delay 0))
 
 (use-package! smartparens
   :init
   (smartparens-global-mode -1)
   (map! :map smartparens-mode-map
         "C-M-f" #'sp-forward-sexp
-        "C-M-b" #'sp-backward-sexp))
+        "C-M-b" #'sp-backward-sexp)
+  (remove-hook `doom-first-buffer-hook 'smartparens-global-mode)
+  (smartparens-global-mode nil)
+  (electric-pair-mode))
 
-(use-package! elfeed
+(use-package org-modern-indent
   :config
-  (setq elfeed-feeds '("https://reddit.com/r/emacs.rss"
-                       "https://reddit.com/r/linux.rss")))
-
-(use-package! auto-dim-other-buffers
-  :config
-  (auto-dim-other-buffers-mode t)
-  (custom-set-faces! '(auto-dim-other-buffers-face :weight extra-light)))
+  (add-hook 'org-mode-hook #'org-modern-indent-mode 90))
 
 (use-package! ox-hugo
   :after org)
 
-(use-package! tree-sitter
-  :hook
-  (prog-mode . global-tree-sitter-mode))
+(use-package treesit-auto
+  :config
+  (global-treesit-auto-mode)
+  (setq treesit-auto-install 'prompt))
 
 (use-package! magit
   :config
   (map!"C-c B" #'magit-blame-addition)
   (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview))
+
+(use-package! magit-todos
+  :after magit
+  :config
+  (magit-todos-mode))
 
 (use-package! org-roam
   :init
@@ -188,6 +233,18 @@
                          :node (org-roam-node-create :title title)
                          :props '(:finalize find-file)))))
 
+(use-package! vertico
+  :config
+  (map! :map vertico-map "C-l" '+vertico/enter-or-preview))
+
+(use-package ultra-scroll
+  ;:load-path "~/code/emacs/ultra-scroll" ; if you git clone'd instead of package-vc-install
+  :init
+  (setq scroll-conservatively 101 ; important!
+        scroll-margin 0)
+  :config
+  (ultra-scroll-mode 1))
+
 ;; MacOS specific error: Cannot find gls (GNU ls). This may cause issues with dired
 (when (string= system-type "darwin")
   (setq dired-use-ls-dired nil))
@@ -204,16 +261,43 @@
   (interactive "r")
   (align-regexp BEG END "\\(\\s-*\\)\\S-+" 1 1 t))
 
-(defun weineng/deploy-braindump()
+(defun my/deploy-braindump()
   "Build braindump's hugo files and upload to TS3."
   (interactive)
   (let ((default-directory "~/.org/braindump/")) (shell-command-to-string "make")))
 
+(defun my/dired-view ()
+  "View files as HTML."
+  (interactive)
+  (let* ((files (dired-get-marked-files))
+         (how-many (length files)))
+    (if (> how-many 0) (xdg-open-files files)
+      (my/xdg-open (car files) t))))
+
+(defun my/xdg-open-impl (file &optional async)
+  "Opens FILE with xdg-open. Without optional argument ASYNC, it will wait for the file to finish playing or review."
+  (let ((command (format "'%s' '%s'" (if (eq system-type 'darwin) "open" "xdg-open") file)))
+    (if async
+     (async-shell-command command)
+     (shell-command command))))
+
+(defun my/xdg-open-files (files)
+  "Opens FILES with xdg-open one by one, waiting for each to finish."
+  (dolist (file files)
+    (my/xdg-open-impl file)))
+
+;; Finally mapping the key V to dired-mode-map
+(define-key dired-mode-map "V" 'my/dired-view)
+
+(defun my/xdg-open (file)
+  (interactive "FFile to open: ")
+  (my/xdg-open-impl (file-truename file) t))
+
 (map!
     ;; only f5-f9 can be user defined."M-/" #'comment-line
     [f5] #'revert-buffer
-    [f6] #'ligma-get-sourcegraph-url
-    [f7] #'ligma-upload-region-to-qs
+    ;; [f6] #'tslisp-get-sourcegraph-url
+    ;; [f7] #'tslisp-upload-region-to-qs
     ;;[f8] #'
     [f9] #'my/scratch-buffer-shortcut
 
@@ -222,13 +306,16 @@
     "C-z" #'undo-only
 
     ;; buffer nav
-    "C-." #'next-buffer
-    "C-," #'previous-buffer
+    "M-'" #'previous-buffer
+    "M-," #'next-buffer
     "M-." #'+lookup/definition
-    "M-," #'better-jumper-jump-backward
+    "M-U" #'better-jumper-jump-forward
+    "M-u" #'better-jumper-jump-backward
+
+    ;;"M-," #'better-jumper-jump-backward
     "C-v"(lambda () (interactive) (forward-line 15))
     "M-v" (lambda () (interactive) (forward-line -15))
-    "M-g" #'goto-line
+    "M-g" #'consult-goto-line
 
     ;; resize window
     "C-<up>" (lambda () (interactive) (enlarge-window 5))
@@ -238,11 +325,7 @@
 
     ;; search
     "C-s" #'swiper
-
-    ;; folding
-    [C-tab] #'+fold/toggle
-    [C-iso-lefttab] #'+fold/close-all
-    [C-M-tab] #'+fold/open-all
+    "M-s" #'consult-flycheck
 
     "M-/" #'comment-line
     "C-x C-k" #'kill-this-buffer
@@ -252,15 +335,25 @@
     "C-c d" #'dired-jump
     "M-p" #'drag-stuff-up
     "M-n" #'drag-stuff-down
-    "C-/" #'+company/complete)
+    "C-/" #'+company/complete
+    "C-?" #'lsp-find-references
+
+    ;; folding
+    "M-;" #'+fold/toggle
+
+    ; allow looping of error
+    "M-0" #'zoom-window-zoom
+    "M-o" #'ace-window
+    "M-`" #'+popup/toggle)
+
+(bind-key* "C-x 3" (lambda () (interactive) (progn (split-window-right) (other-window 1))))
+(bind-key* "M-t" '+vterm/toggle)
 
 (map! :map pdf-isearch-minor-mode-map
       "C-s" #'isearch-forward
       "C-r" #'isearch-backward)
 
 (global-set-key (kbd "<escape>") 'doom/escape)
-(bind-key* "M-t" '+vterm/toggle)
-(add-hook 'before-save-hook 'whitespace-cleanup)
 (setq super-save-auto-save-when-idle t
       auto-save-default t)
 
@@ -271,35 +364,15 @@
       scroll-step 1 ;; keyboard scroll one line at a time
       use-dialog-box nil) ;; Disable dialog boxes since they weren't working in Mac OSX
 
-;; disable adding new projects automatically due to two sigma's submodule structure.
-;; add projects manually using projectile-add-known-project
-(setq projectile-track-known-projects-automatically nil)
-
-(setq lsp-lens-enable nil)
-
 ;; make lookup 1000x faster for python
 (after! gcmh
-  (setq gcmh-high-cons-threshold 33554432)  ; 32mb, or 64mb, or *maybe* 128mb, BUT NOT 512mb
-  (setq read-process-output-max  (* 20 (* 1024 1024)))) ;; 20mb
-
-(after! org-present
-  (add-hook 'org-present-mode-hook
-               (lambda ()
-                 (org-present-big)
-                 (org-display-inline-images)
-                 (org-present-hide-cursor)
-                 (org-present-read-only)))
-  (add-hook 'org-present-mode-quit-hook
-            (lambda ()
-              (org-present-small)
-              (org-remove-inline-images)
-              (org-present-show-cursor)
-              (org-present-read-write))))
+  (setq gcmh-high-cons-threshold 33554432  ; 32mb, or 64mb, or *maybe* 128mb, BUT NOT 512mb
+        read-process-output-max  (* 20 (* 1024 1024)))) ;; 20mb
 
 (after! org
   (setq org-attach-dir-relative t
         org-directory "~/.org/"
-        org-ellipsis " ▼ "
+        org-ellipsis " ? "
 
         ;; lint code in org-mode pdf exports
         org-latex-src-block-backend 'minted
@@ -335,10 +408,12 @@
                                        ("t" . "theorem"))))
 
 (after! doom-modeline
-   (setq doom-modeline-buffer-file-name-style 'truncate-nil)
-   (setq inhibit-compacting-font-caches t)
-   (size-indication-mode nil)
-   (setq doom-modeline-indent-info t))
+   (setq doom-modeline-buffer-file-name-style 'truncate-nil
+         inhibit-compacting-font-caches t
+         doom-modeline-indent-info t
+         find-file-visit-truename nil
+         doom-modeline-project-detection 'project)
+   (size-indication-mode nil))
 
 (after! dired
   (setq dired-listing-switches "-ahl -v --group-directories-first")
@@ -346,68 +421,55 @@
       "C-f" #'dired-find-file
       "C-b" #'dired-up-directory))
 
-(add-hook 'c-mode-common-hook (lambda () (define-key c++-mode-map (kbd "C-c C-c") 'ff-find-other-file)))
-(add-hook 'makefile-mode-hook (lambda () (setq indent-tabs-mode t)))
-(defun my-c-mode-hook ()
-  (c-set-offset 4)
-  (c-set-offset 4))
-(add-hook 'c-mode-hook 'my-c-mode-hook)
+(after! org-present
+  (add-hook 'org-present-mode-hook
+            (lambda ()
+              (org-present-big)
+              (org-display-inline-images)
+              (display-line-numbers-mode -1)
+              (setq header-line-format " ")
+              ;; (org-present-hide-cursor)
+              (org-present-read-only)))
+  (add-hook 'org-present-mode-quit-hook
+            (lambda ()
+              ;;(org-present-small)
+              (org-remove-inline-images)
+              (org-present-show-cursor)
+              (setq header-line-format nil)
+              (display-line-numbers-mode 1)
+              (org-present-read-write))))
+(after! c++-ts-mode
+  (add-hook 'c-ts-base-mode-hook #'(lambda () (define-key c++-ts-mode-map (kbd "C-c C-c") 'lsp-clangd-find-other-file)))
+  (add-hook 'c-ts-base-mode-hook #'(lambda() (setq c-ts-mode-indent-offset 4)))
+  (add-hook 'python-ts-mode-hook #'(lambda () (setq flycheck-checker 'python-pylint))))
 
-(defun compile-parent (command)
-  (interactive
-   (let* ((make-directory (locate-dominating-file (buffer-file-name)
-                                                  "Makefile"))
-          (command (concat "make -k -C "
-                           (shell-quote-argument make-directory))))
-     (list (compilation-read-command command))))
-  (compile command))
-(set-face-foreground 'vertical-border "white")
+(use-package! expand-region
+  :config
+    (setq expand-region-subword-enabled t)
+    (map! "C-\\" #'er/expand-region)
+  (global-subword-mode))
 
-;###autoload
-(defun org-odt-publish-to-odt (plist filename pub-dir)
-  "Publish an org file to ODT.
 
- FILENAME is the filename of the Org file to be published.  PLIST
- is the property list of the given project.  PUB-DIR is the publishing
- directory.
+;; Configure vc-root-dir to check for .projectile
+(defun my/vc-root-dir ()
+  "Return the root of the version controlled directory."
+  (when-let ((projectile-root (projectile-project-root)))
+    (if (string-match-p ".git" projectile-root)
+        projectile-root
+      (when-let ((git-root (locate-dominating-file projectile-root ".git")))
+        (file-name-directory git-root)))))
+(advice-add 'vc-root-dir :override #'my/vc-root-dir)
 
- Return output file name."
-  (unless (or (not pub-dir) (file-exists-p pub-dir)) (make-directory pub-dir t))
-  ;; Check if a buffer visiting FILENAME is already open.
-  (let* ((org-inhibit-startup t)
-         (visiting (find-buffer-visiting filename))
-         (work-buffer (or visiting (find-file-noselect filename))))
-    (unwind-protect
-     (with-current-buffer work-buffer
-       (let ((outfile (org-export-output-file-name ".odt" nil pub-dir)))
-         (org-odt--export-wrap
-          outfile
-          (let* ((org-odt-embedded-images-count 0)
-                 (org-odt-embedded-formulas-count 0)
-                 (org-odt-object-counters nil)
-                 (hfy-user-sheet-assoc nil))
-            (let ((output (org-export-as 'odt nil nil nil
-                                         (org-combine-plists
-                                          plist
-                                          `(:crossrefs
-                                            ,(org-publish-cache-get-file-property
-                                              (expand-file-name filename) :crossrefs nil t)
-                                            :filter-final-output
-                                            (org-publish--store-crossrefs
-                                             org-publish-collect-index
-                                             ,@(plist-get plist :filter-final-output))))))
-                  (out-buf (progn (require 'nxml-mode)
-                                  (let ((nxml-auto-insert-xml-declaration-flag nil))
-                                    (find-file-noselect
-                                     (concat org-odt-zip-dir "content.xml") t)))))
-              (with-current-buffer out-buf (erase-buffer) (insert output))))))))
-    (unless visiting (kill-buffer work-buffer))))
 
-(custom-set-faces!
-  '(markdown-header-delimiter-face :foreground "#616161" :height 0.9)
-  '(markdown-header-face-1 :height 1.8 :foreground "#A3BE8C" :weight extra-bold :inherit markdown-header-face)
-  '(markdown-header-face-2 :height 1.4 :foreground "#EBCB8B" :weight extra-bold :inherit markdown-header-face)
-  '(markdown-header-face-3 :height 1.2 :foreground "#D08770" :weight extra-bold :inherit markdown-header-face)
-  '(markdown-header-face-4 :height 1.15 :foreground "#BF616A" :weight bold :inherit markdown-header-face)
-  '(markdown-header-face-5 :height 1.1 :foreground "#b48ead" :weight bold :inherit markdown-header-face)
-  '(markdown-header-face-6 :height 1.05 :foreground "#5e81ac" :weight semi-bold :inherit markdown-header-face))
+;; https://github.com/doomemacs/doomemacs/issues/1739
+(require 'elec-pair)
+(add-hook 'c++-ts-mode-hook (lambda()
+                                   (electric-pair-post-self-insert-function)
+                                   (indent-according-to-mode)))
+
+(xterm-mouse-mode 1)
+(xclip-mode 1)
+(define-key minibuffer-inactive-mode-map [mouse-1] #'ignore)
+
+
+(setq magit-git-global-arguments '("--no-pager" "-c" "core.preloadindex=true" "-c" "log.showSignature=false" "-c" "color.ui=false" "-c" "color.diff=false"))
