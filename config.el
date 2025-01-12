@@ -2,17 +2,14 @@
 (setq user-full-name "Ang Wei Neng"
       user-mail-address "weineng.a@gmail.com"
       doom-scratch-buffer-major-mode 'org-mode
-      doom-font (font-spec :family "JetBrains Mono" :size 14 :weight 'light)
-      doom-big-font (font-spec :family "JetBrains Mono" :size 14)
+      doom-font (font-spec :family "JetBrains Mono" :size 15 :weight 'light)
+      doom-big-font (font-spec :family "JetBrains Mono" :size 24)
       doom-variable-pitch-font (font-spec :family "Roboto" :weight 'light)
       doom-serif-font (font-spec :family "Iosevka" :weight 'light)
       doom-theme 'doom-dracula
       display-line-numbers-type t
       load-prefer-newer t
       writeroom-extra-line-spacing 0.3
-
-      visual-fill-column-width 110
-      visual-fill-column-center-text t
 
       indent-tabs-mode nil
       search-highlight t
@@ -35,15 +32,15 @@
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
-(use-package! magit-delta
-  :after magit
-  :hook
-  (magit-mode . magit-delta-mode)
-  :config
-  (setq
-    magit-delta-default-dark-theme "Dracula"
-    magit-delta-default-light-theme "Github"
-    magit-delta-hide-plus-minus-markers nil))
+;; (use-package! magit-delta
+;;   :after magit
+;;   :hook
+;;   (magit-mode . magit-delta-mode)
+;;   :config
+;;   (setq
+;;     magit-delta-default-dark-theme "Dracula"
+;;     magit-delta-default-light-theme "Github"
+;;     magit-delta-hide-plus-minus-markers nil))
 
 (use-package! multiple-cursors
   :config
@@ -98,12 +95,6 @@
     :init
     (setq parinfer-rust-auto-download t))
 
-(use-package! dired-narrow
-  :commands (dired-narrow-fuzzy)
-  :init
-  (map! :map dired-mode-map
-        :desc "narrow" "/" #'dired-narrow-fuzzy))
-
 (use-package company
   :after lsp-mode
   :init
@@ -152,10 +143,11 @@
   (global-treesit-auto-mode)
   (setq treesit-auto-install 'prompt))
 
-(use-package! magit
-  :config
-  (map!"C-c B" #'magit-blame-addition)
-  (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview))
+;; (use-package! magit
+;;   :config
+;;   (map!"C-c B" #'magit-blame-addition)
+;;   (map!"C-c g" #'magit)
+;;   (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview))
 
 (use-package! magit-todos
   :after magit
@@ -286,21 +278,19 @@
   (dolist (file files)
     (my/xdg-open-impl file)))
 
-;; Finally mapping the key V to dired-mode-map
-(define-key dired-mode-map "V" 'my/dired-view)
-
 (defun my/xdg-open (file)
   (interactive "FFile to open: ")
   (my/xdg-open-impl (file-truename file) t))
 
 (map!
-    ;; only f5-f9 can be user defined."M-/" #'comment-line
+    ;; only f5-f9 can be user defined."
     [f5] #'revert-buffer
     ;; [f6] #'tslisp-get-sourcegraph-url
     ;; [f7] #'tslisp-upload-region-to-qs
     ;;[f8] #'
     [f9] #'my/scratch-buffer-shortcut
 
+    "M-/" #'comment-line
     ;; undo-redo
     "M-z" #'undo-redo
     "C-z" #'undo-only
@@ -440,7 +430,6 @@
               (org-present-read-write))))
 (after! c++-ts-mode
   (add-hook 'c-ts-base-mode-hook #'(lambda () (define-key c++-ts-mode-map (kbd "C-c C-c") 'lsp-clangd-find-other-file)))
-  (add-hook 'c-ts-base-mode-hook #'(lambda() (setq c-ts-mode-indent-offset 4)))
   (add-hook 'python-ts-mode-hook #'(lambda () (setq flycheck-checker 'python-pylint))))
 
 (use-package! expand-region
