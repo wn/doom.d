@@ -2,8 +2,8 @@
 (setq user-full-name "Ang Wei Neng"
       user-mail-address "weineng.a@gmail.com"
       doom-scratch-buffer-major-mode 'org-mode
-      doom-font (font-spec :family "JetBrains Mono" :size 15 :weight 'light)
-      doom-big-font (font-spec :family "JetBrains Mono" :size 24)
+      doom-font (font-spec :family "JetBrains Mono" :size 14 :weight 'light)
+      doom-big-font (font-spec :family "JetBrains Mono" :size 25)
       doom-variable-pitch-font (font-spec :family "Roboto" :weight 'light)
       doom-serif-font (font-spec :family "Iosevka" :weight 'light)
       doom-theme 'doom-dracula
@@ -66,8 +66,8 @@
         lsp-ui-sideline-wait-for-all-symbols nil
         lsp-ui-sideline-show-hover nil)
   :config
-  ;; (lsp-ui-sideline-mode)
-  ;; (lsp-ui-sideline-toggle-symbols-info)
+  (lsp-ui-sideline-mode)
+  (lsp-ui-sideline-toggle-symbols-info)
   (lsp-ui-mode))
 
 (use-package! ox-reveal
@@ -128,8 +128,7 @@
         "C-M-f" #'sp-forward-sexp
         "C-M-b" #'sp-backward-sexp)
   (remove-hook `doom-first-buffer-hook 'smartparens-global-mode)
-  (smartparens-global-mode nil)
-  (electric-pair-mode))
+  (smartparens-global-mode nil))
 
 (use-package org-modern-indent
   :config
@@ -138,16 +137,12 @@
 (use-package! ox-hugo
   :after org)
 
-(use-package treesit-auto
+(use-package! magit
   :config
-  (global-treesit-auto-mode)
-  (setq treesit-auto-install 'prompt))
-
-;; (use-package! magit
-;;   :config
-;;   (map!"C-c B" #'magit-blame-addition)
-;;   (map!"C-c g" #'magit)
-;;   (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview))
+  (map!"C-c B" #'magit-blame-addition)
+  (map!"C-c g" #'magit)
+  (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview)
+  (setq magit-git-global-arguments '("--no-pager" "-c" "core.preloadindex=true" "-c" "log.showSignature=false" "-c" "color.ui=false" "-c" "color.diff=false")))
 
 (use-package! magit-todos
   :after magit
@@ -287,7 +282,7 @@
     [f5] #'revert-buffer
     ;; [f6] #'tslisp-get-sourcegraph-url
     ;; [f7] #'tslisp-upload-region-to-qs
-    ;;[f8] #'
+    ;; [f8] #' reserved for compiler explorer
     [f9] #'my/scratch-buffer-shortcut
 
     "M-/" #'comment-line
@@ -318,7 +313,7 @@
     "M-s" #'consult-flycheck
 
     "M-/" #'comment-line
-    "C-x C-k" #'kill-this-buffer
+    "C-0" #'kill-buffer-and-window
     ;; suppress suspend emacs shortcut
     "C-x C-z" nil
     "C-o" #'other-window
@@ -438,7 +433,6 @@
     (map! "C-\\" #'er/expand-region)
   (global-subword-mode))
 
-
 ;; Configure vc-root-dir to check for .projectile
 (defun my/vc-root-dir ()
   "Return the root of the version controlled directory."
@@ -456,9 +450,24 @@
                                    (electric-pair-post-self-insert-function)
                                    (indent-according-to-mode)))
 
-(xterm-mouse-mode 1)
-(xclip-mode 1)
-(define-key minibuffer-inactive-mode-map [mouse-1] #'ignore)
+;;(define-key minibuffer-inactive-mode-map [mouse-1] #'ignore)
 
 
-(setq magit-git-global-arguments '("--no-pager" "-c" "core.preloadindex=true" "-c" "log.showSignature=false" "-c" "color.ui=false" "-c" "color.diff=false"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UNPACKED ;;;;;;;;;
+(use-package! compiler-explorer
+  :config
+  (defun my/toggle-compiler-explorer ()
+    (interactive)
+    (if (compiler-explorer--active-p)
+        (compiler-explorer-exit)
+      (compiler-explorer)))
+  (map! [f8] #'my/toggle-compiler-explorer)
+  ;;(setq compiler-explorer-url "http://localhost:10240")
+  (setq compiler-explorer-url "https://godbolt.org")
+  (map! :map compiler-explorer-mode-map
+        "M-." #'compiler-explorer-jump
+        "M-," #'compiler-explorer-layout
+        "M-'" #'compiler-explorer-layout))
+
+;; (after! doom-themes
+;;;   (set-face-attribute 'hl-line nil :background "#16181F"))

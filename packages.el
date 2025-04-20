@@ -31,3 +31,6 @@
 (package! ultra-scroll :recipe(:host github :repo "jdtsmith/ultra-scroll"))
 (package! xclip)
 (package! zoom-window)
+(package! magit-todos)
+(package! compiler-explorer)
+(package! treesit-auto)
