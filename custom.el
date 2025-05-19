@@ -5,10 +5,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(clang-format-fallback-style "google")
- '(disaster-cxx "c++ -O3")
- '(flycheck-clang-args
-   '("-std=c++2a" "-O0" "-march=native" "-g" "-Rpass-analysis=loop-vectorize"
-     "-Rpass-missed=loop-vectorize" "-Rpass=loop-vectorize"))
+ '(lsp-clients-clangd-args '("-j=4" "--header-insertion-decorators=0"))
  '(package-selected-packages '(treesit-auto)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

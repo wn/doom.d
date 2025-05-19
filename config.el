@@ -11,36 +11,86 @@
       load-prefer-newer t
       writeroom-extra-line-spacing 0.3
 
+      visual-fill-column-width 110
+      visual-fill-column-centre-text t
+
       indent-tabs-mode nil
       search-highlight t
       search-whitespace-regexp ".*?")
 
-(use-package clang-format
-  :init
-  (setq clang-format-style "file"))
+(use-package! compiler-explorer
+  :config
+  (defun my/toggle-compiler-explorer ()
+    (interactive)
+    (if (compiler-explorer--active-p)
+        (compiler-explorer-exit)
+      (compiler-explorer)))
+  (map! [f8] #'my/toggle-compiler-explorer)
+  ;;(setq compiler-explorer-url "http://localhost:10240")
+  (setq compiler-explorer-url "https://godbolt.org")
+  (map! :map compiler-explorer-mode-map
+        "M-." #'compiler-explorer-jump
+        "M-," #'compiler-explorer-layout
+        "M-'" #'compiler-explorer-layout))
+
+(use-package x86-lookup
+  :ensure t
+  :config
+  (defun my/x86-lookup-at-point ()
+   "Lookup the x86 instruction under the cursor using `x86-lookup`."
+   (interactive)
+   (let ((symbol (thing-at-point 'symbol t)))
+     (if symbol
+         (x86-lookup symbol)
+       (message "No symbol under cursor!"))))
+  (global-set-key (kbd "C-h x") #'my/x86-lookup-at-point)
+  (setq  x86-lookup-pdf "/home/weineng/Downloads/325383-087-sdm-vol-2abcd.pdf"))
+
+(use-package pdf-tools
+  :ensure t
+  :config
+  (setq pdf-info-epdfinfo-program "~/pdf-tools/server/epdfinfo")
+  (pdf-tools-install-noverify))
+
+(use-package! clang-format
+  :ensure t
+  :config
+  (setq clang-format-style "file"
+        clang-format-fallback-style "google")
+  (defun my/find-clang-format-file ()
+   "Recursively search for a .clang-format file in the parent directories."
+   (let ((dir (locate-dominating-file default-directory ".clang-format")))
+     (when dir
+       (expand-file-name ".clang-format" dir))))
+ (defun my/clang-format-before-save ()
+   "Run clang-format on the buffer if a .clang-format file exists."
+   (when (and (eq major-mode 'c++-ts-mode) ; Change this if you want to support other modes
+              (my/find-clang-format-file))
+     (clang-format-buffer)))
+ (add-hook 'before-save-hook 'my/clang-format-before-save))
 
 (use-package! flycheck
   :init
   :config
   (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
-  (setq flycheck-clang-language-standard "c++2a"
-        flycheck-gcc-language-standard "c++2a"
-        flycheck-clang-args '("-std=c++2a" "-O0" "-march=native" "-g")))
+  (setq flycheck-clang-language-standard "c++2b"
+        flycheck-gcc-language-standard "c++2b"
+        flycheck-clang-args '("-std=c++2b" "-O0" "-march=native" "-g")))
 
 (use-package orderless
   :custom
   (completion-styles '(orderless basic))
   (completion-category-overrides '((file (styles basic partial-completion)))))
 
-;; (use-package! magit-delta
-;;   :after magit
-;;   :hook
-;;   (magit-mode . magit-delta-mode)
-;;   :config
-;;   (setq
-;;     magit-delta-default-dark-theme "Dracula"
-;;     magit-delta-default-light-theme "Github"
-;;     magit-delta-hide-plus-minus-markers nil))
+(use-package! magit-delta
+  :after magit
+  :hook
+  (magit-mode . magit-delta-mode)
+  :config
+  (setq
+    magit-delta-default-dark-theme "Dracula"
+    magit-delta-default-light-theme "Github"
+    magit-delta-hide-plus-minus-markers nil))
 
 (use-package! multiple-cursors
   :config
@@ -76,7 +126,7 @@
         org-reveal-mathjax t))
 
 (use-package! swiper
-  :init
+  :config
   (setq swiper-action-recenter t))
 
 (use-package edraw-org
@@ -138,11 +188,30 @@
   :after org)
 
 (use-package! magit
+  :ensure t
   :config
-  (map!"C-c B" #'magit-blame-addition)
-  (map!"C-c g" #'magit)
-  (magit-add-section-hook 'magit-status-sections-hook 'magit-insert-modules-overview)
-  (setq magit-git-global-arguments '("--no-pager" "-c" "core.preloadindex=true" "-c" "log.showSignature=false" "-c" "color.ui=false" "-c" "color.diff=false")))
+  (setq magit-git-global-arguments
+   `("--no-pager"
+     "-c" "core.preloadindex=true"
+     "-c" "log.showSignature=false"
+     "-c" "color.ui=false"
+     "-c" "color.diff=false"))
+  (map!"C-c B" #'magit-blame-addition
+       "C-c g g" #'magit-status)
+  :after nerd-icons
+  :custom
+  (magit-format-file-function #'magit-format-file-nerd-icons)
+  :init
+  ;; Have magit-status go full screen and quit to previous
+  ;; configuration.  Taken from
+  ;; http://whattheemacsd.com/setup-magit.el-01.html#comment-748135498
+  ;; and http://irreal.org/blog/?p=2253
+  (defadvice magit-status (around magit-fullscreen activate)
+    (window-configuration-to-register :magit-fullscreen)
+    ad-do-it
+    (delete-other-windows))
+  (defadvice magit-quit-window (after magit-restore-screen activate)
+    (jump-to-register :magit-fullscreen)))
 
 (use-package! magit-todos
   :after magit
@@ -220,6 +289,20 @@
                          :node (org-roam-node-create :title title)
                          :props '(:finalize find-file)))))
 
+(use-package! expand-region
+  :config
+    (setq expand-region-subword-enabled t)
+    (map! "C-\\" #'er/expand-region)
+  (global-subword-mode))
+
+(use-package! disaster
+  :commands (disaster)
+  :init
+  (setq disaster-cxxflags "-O0 -march=native -std=c++2a -g"
+        disaster-cxx "g++"
+        disaster-cpp-regexp "\\(h\\|c\\|cc\\|hh\\|hpp\\)$"
+        disaster-find-build-root-functions '(projectile-acquire-root)))
+
 (use-package! vertico
   :config
   (map! :map vertico-map "C-l" '+vertico/enter-or-preview))
@@ -232,9 +315,27 @@
   :config
   (ultra-scroll-mode 1))
 
-;; MacOS specific error: Cannot find gls (GNU ls). This may cause issues with dired
-(when (string= system-type "darwin")
-  (setq dired-use-ls-dired nil))
+;; (use-package! copilot
+;;   :init
+;;   (exec-path-from-shell-initialize)
+;;   (doom/reload-env)
+;;   :hook (prog-mode . copilot-mode)
+;;   :bind (:map copilot-completion-map
+;;               ("C-l" . 'copilot-accept-completion))
+
+;;   :config
+;;   (defun extract-port-from-url (url)
+;;    "Extract the port number from the given URL."
+;;    (if (string-match "http://[^:]+:\\([0-9]+\\)" url)
+;;        (match-string 1 url)
+;;      (error "No port found in URL")))
+;;   (add-to-list 'copilot-indentation-alist '(prog-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(org-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(text-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(closure-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode . 2))
+;;   (setq copilot-indent-offset-warning-disable t)
+;;   (setq copilot-network-proxy '(:host "127.0.0.1" :port 20000))) ;; hard coded from nixfiles
 
 (defun my/scratch-buffer-shortcut()
   "Open scratch buffer as a popup window."
@@ -278,10 +379,10 @@
   (my/xdg-open-impl (file-truename file) t))
 
 (map!
-    ;; only f5-f9 can be user defined."
+    ;; only f5-f9 can be user defined.
     [f5] #'revert-buffer
-    ;; [f6] #'tslisp-get-sourcegraph-url
-    ;; [f7] #'tslisp-upload-region-to-qs
+    ;; [f6]
+    ;; [f7]
     ;; [f8] #' reserved for compiler explorer
     [f9] #'my/scratch-buffer-shortcut
 
@@ -423,15 +524,11 @@
               (setq header-line-format nil)
               (display-line-numbers-mode 1)
               (org-present-read-write))))
-(after! c++-ts-mode
-  (add-hook 'c-ts-base-mode-hook #'(lambda () (define-key c++-ts-mode-map (kbd "C-c C-c") 'lsp-clangd-find-other-file)))
-  (add-hook 'python-ts-mode-hook #'(lambda () (setq flycheck-checker 'python-pylint))))
 
-(use-package! expand-region
-  :config
-    (setq expand-region-subword-enabled t)
-    (map! "C-\\" #'er/expand-region)
-  (global-subword-mode))
+(after! c++-ts-mode
+  (add-hook 'c++-ts-mode-hook (lambda () (define-key c++-ts-mode-map (kbd "C-c C-c") 'lsp-clangd-find-other-file)))
+  (add-hook 'c-ts-mode-hook (lambda() (setq c-ts-mode-indent-offset 4)))
+  (add-hook 'c++-ts-mode-hook (lambda() (setq c-ts-mode-indent-offset 4))))
 
 ;; Configure vc-root-dir to check for .projectile
 (defun my/vc-root-dir ()
@@ -454,20 +551,18 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UNPACKED ;;;;;;;;;
-(use-package! compiler-explorer
-  :config
-  (defun my/toggle-compiler-explorer ()
-    (interactive)
-    (if (compiler-explorer--active-p)
-        (compiler-explorer-exit)
-      (compiler-explorer)))
-  (map! [f8] #'my/toggle-compiler-explorer)
-  ;;(setq compiler-explorer-url "http://localhost:10240")
-  (setq compiler-explorer-url "https://godbolt.org")
-  (map! :map compiler-explorer-mode-map
-        "M-." #'compiler-explorer-jump
-        "M-," #'compiler-explorer-layout
-        "M-'" #'compiler-explorer-layout))
-
-;; (after! doom-themes
-;;;   (set-face-attribute 'hl-line nil :background "#16181F"))
+(defun quicker-fix ()
+  (let ((build-error-file (concat (project-root (project-current)) ".builderrors")))
+    (if (string= (buffer-name) (file-name-nondirectory build-error-file))
+        (kill-buffer (current-buffer))
+      (progn
+        (shell-command
+          (format "cd %s && find . -name 'build.log' -print0 | xargs -0 -I {} sh -c 'sed -r \"s/\\\\x1B\\\\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g\" \"{}\" | grep \": error:\" | sed \"s|^|%s|\"' | sort | uniq > %s"
+           (project-root (project-current))
+           ""
+           build-error-file)) ; Make sure the number of arguments matches the placeholders
+        (message "fetching errors...")
+        (let ((buffer (find-file-noselect build-error-file)))
+          (with-current-buffer buffer
+            (compilation-mode))
+          buffer)))))
