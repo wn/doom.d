@@ -14,3 +14,4 @@
  ;; If there is more than one, they won't work right.
  '(hl-line ((t (:extend t :background "#16181F")))))
 (put 'customize-face 'disabled nil)
+(put 'upcase-region 'disabled nil)

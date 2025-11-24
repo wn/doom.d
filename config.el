@@ -2,8 +2,8 @@
 (setq user-full-name "Ang Wei Neng"
       user-mail-address "weineng.a@gmail.com"
       doom-scratch-buffer-major-mode 'org-mode
-      doom-font (font-spec :family "JetBrains Mono" :size 14 :weight 'light)
-      doom-big-font (font-spec :family "JetBrains Mono" :size 25)
+      doom-font (font-spec :family "JetBrains Mono" :size 28 :weight 'light)
+      doom-big-font (font-spec :family "JetBrains Mono" :size 35)
       doom-variable-pitch-font (font-spec :family "Roboto" :weight 'light)
       doom-serif-font (font-spec :family "Iosevka" :weight 'light)
       doom-theme 'doom-dracula
@@ -427,7 +427,7 @@
     ;; folding
     "M-;" #'+fold/toggle
 
-    ; allow looping of error
+
     "M-0" #'zoom-window-zoom
     "M-o" #'ace-window
     "M-`" #'+popup/toggle)
@@ -566,3 +566,13 @@
           (with-current-buffer buffer
             (compilation-mode))
           buffer)))))
+(setq vterm-shell "zsh")
+(use-package treesit-auto
+  :config
+  (global-treesit-auto-mode))
+(defun rustic-mode-auto-save-hook ()
+  "Enable auto-saving in rustic-mode buffers."
+  (when buffer-file-name
+    (setq-local compilation-ask-about-save nil)
+    (setq-local rustic-format-on-save t)))
+(add-hook 'rustic-mode-hook 'rustic-mode-auto-save-hook)
