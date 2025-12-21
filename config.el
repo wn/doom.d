@@ -18,6 +18,7 @@
       search-highlight t
       search-whitespace-regexp ".*?")
 
+
 (use-package! compiler-explorer
   :config
   (defun my/toggle-compiler-explorer ()
@@ -109,16 +110,12 @@
         lsp-inhibit-message t
         lsp-message-project-root-warning t))
 
-(use-package! lsp-ui
-  :after lsp-mode
-  :init
-  (setq lsp-ui-sideline-enable nil
-        lsp-ui-sideline-wait-for-all-symbols nil
-        lsp-ui-sideline-show-hover nil)
-  :config
-  (lsp-ui-sideline-mode)
-  (lsp-ui-sideline-toggle-symbols-info)
-  (lsp-ui-mode))
+(after! lsp-ui
+  (setq lsp-ui-mode t
+        lsp-ui-sideline-enable nil
+        lsp-ui-sideline-show-diagnostics nil
+        lsp-ui-sideline-show-hover nil
+        lsp-ui-doc-enable nil))
 
 (use-package! ox-reveal
   :init
@@ -252,7 +249,7 @@
            :unnarrowed t)
           ("r" "reference" plain "%?"
            :if-new
-           (file+head "reference/${slug}.org" "#+title: ${title}\n")
+           (file+head "reference/${slug}.org" "#+title: ${title}\n#+hugo_draft: true\n")
            :immediate-finish t
            :unnarrowed t)
           ("a" "article" plain "%?"
@@ -424,9 +421,19 @@
     "C-/" #'+company/complete
     "C-?" #'lsp-find-references
 
+    "M-1" (lambda () (interactive) (tab-select 1))
+    "M-2" (lambda () (interactive) (tab-select 2))
+    "M-3" (lambda () (interactive) (tab-select 3))
+    "M-4" (lambda () (interactive) (tab-select 4))
+    "M-5" (lambda () (interactive) (tab-select 5))
+    "M-6" (lambda () (interactive) (tab-select 6))
+    "M-7" (lambda () (interactive) (tab-select 7))
+    "M-8" (lambda () (interactive) (tab-select 8))
+
+    "M-k" (lambda () (interactive) (tab-close))
+
     ;; folding
     "M-;" #'+fold/toggle
-
 
     "M-0" #'zoom-window-zoom
     "M-o" #'ace-window
@@ -491,7 +498,14 @@
                                        ("v" . "verse")
                                        ("el" . "src emacs-lisp")
                                        ("d" . "definition")
-                                       ("t" . "theorem"))))
+                                       ("t" . "theorem")))
+    ;; *** put the latex sizing here ***
+  (setq org-format-latex-options
+        (plist-put org-format-latex-options :scale 2.5))      ;; inline
+  (setq org-format-latex-options
+        (plist-put org-format-latex-options :display-scale 2.5)) ;; blocks
+  (setq org-format-latex-options
+        (plist-put org-format-latex-options :dpi 200)))
 
 (after! doom-modeline
    (setq doom-modeline-buffer-file-name-style 'truncate-nil
@@ -566,13 +580,27 @@
           (with-current-buffer buffer
             (compilation-mode))
           buffer)))))
+
 (setq vterm-shell "zsh")
+
 (use-package treesit-auto
   :config
   (global-treesit-auto-mode))
+
 (defun rustic-mode-auto-save-hook ()
   "Enable auto-saving in rustic-mode buffers."
   (when buffer-file-name
     (setq-local compilation-ask-about-save nil)
     (setq-local rustic-format-on-save t)))
+
 (add-hook 'rustic-mode-hook 'rustic-mode-auto-save-hook)
+
+(defun my/python-lsp-fix-and-format-on-save ()
+  (when (bound-and-true-p lsp-mode)
+    (ignore-errors (lsp-execute-code-action-by-kind "source.fixAll"))
+    (ignore-errors (lsp-execute-code-action-by-kind "source.organizeImports"))
+    (ignore-errors (lsp-format-buffer))))
+
+(add-hook 'python-ts-mode-hook
+          (lambda ()
+            (add-hook 'before-save-hook #'my/python-lsp-fix-and-format-on-save nil t)))
