@@ -42,3 +42,7 @@
 (package! x86-lookup)
 (package! xclip)
 (package! zoom-window)
+(package! claudemacs
+  :recipe (:host github :repo "cpoile/claudemacs"))
+(package! inheritenv)
+(package! eat)

@@ -604,3 +604,22 @@
 (add-hook 'python-ts-mode-hook
           (lambda ()
             (add-hook 'before-save-hook #'my/python-lsp-fix-and-format-on-save nil t)))
+
+(use-package! claudemacs
+  :init
+  (define-key prog-mode-map (kbd "C-c x") #'claudemacs-transient-menu)
+  (define-key emacs-lisp-mode-map (kbd "C-c x") #'claudemacs-transient-menu)
+  (define-key text-mode-map (kbd "C-c x") #'claudemacs-transient-menu)
+  (define-key python-base-mode-map (kbd "C-c x") #'claudemacs-transient-menu)
+  (map! :map eat-mode-map
+      "C-c x" #'claudemacs-transient-menu)
+ :config
+ (setq claudemacs-default-tool 'codex))
+
+(after! eat
+  (when (boundp 'eat-semi-char-mode-map)
+    (define-key eat-semi-char-mode-map (kbd "C-o") #'other-window))
+  (when (boundp 'eat-char-mode-map)
+    (define-key eat-char-mode-map (kbd "C-o") #'other-window))
+  (when (boundp 'eat-line-mode-map)
+    (define-key eat-line-mode-map (kbd "C-o") #'other-window)))
