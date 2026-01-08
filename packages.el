@@ -46,3 +46,4 @@
   :recipe (:host github :repo "cpoile/claudemacs"))
 (package! inheritenv)
 (package! eat)
+(package! exec-path-from-shell)
