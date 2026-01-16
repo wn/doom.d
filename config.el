@@ -34,8 +34,30 @@
         "M-," #'compiler-explorer-layout
         "M-'" #'compiler-explorer-layout))
 
+(use-package treesit-auto
+  :config
+  (global-treesit-auto-mode))
+
+(use-package! claudemacs
+  :config
+  (setq claudemacs-default-tool 'codex)
+  (after! eat
+   (map! :map eat-mode-map
+         "C-c x" #'claudemacs-transient-menu)
+   (when (boundp 'eat-semi-char-mode-map)
+     (define-key eat-semi-char-mode-map (kbd "C-o") #'other-window))
+   (when (boundp 'eat-char-mode-map)
+     (define-key eat-char-mode-map (kbd "C-o") #'other-window))
+   (when (boundp 'eat-line-mode-map)
+     (define-key eat-line-mode-map (kbd "C-o") #'other-window))
+   (when (boundp 'eat-semi-char-mode-map)
+     (map! :map eat-semi-char-mode-map
+         "C-c C-t" #'eat-line-mode))
+   (when (boundp 'eat-line-mode-map)
+     (map! :map eat-line-mode-map
+         "C-c C-t" #'eat-semi-char-mode))))
+
 (use-package x86-lookup
-  :ensure t
   :config
   (defun my/x86-lookup-at-point ()
    "Lookup the x86 instruction under the cursor using `x86-lookup`."
@@ -48,13 +70,11 @@
   (setq  x86-lookup-pdf "/home/weineng/Downloads/325383-087-sdm-vol-2abcd.pdf"))
 
 (use-package pdf-tools
-  :ensure t
   :config
-  (setq pdf-info-epdfinfo-program "~/pdf-tools/server/epdfinfo")
+  ;; (setq pdf-info-epdfinfo-program "~/pdf-tools/server/epdfinfo")
   (pdf-tools-install-noverify))
 
 (use-package! clang-format
-  :ensure t
   :config
   (setq clang-format-style "file"
         clang-format-fallback-style "google")
@@ -111,11 +131,15 @@
         lsp-message-project-root-warning t))
 
 (after! lsp-ui
-  (setq lsp-ui-mode t
-        lsp-ui-sideline-enable nil
+  (setq lsp-ui-sideline-enable nil
         lsp-ui-sideline-show-diagnostics nil
         lsp-ui-sideline-show-hover nil
         lsp-ui-doc-enable nil))
+
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+   '("--background-index"
+     "--query-driver=/home/weineng/.nix-profile/bin/clang++,/nix/store/*/bin/clang++,/nix/store/*/bin/g++")))
 
 (use-package! ox-reveal
   :init
@@ -145,8 +169,6 @@
 (use-package company
   :after lsp-mode
   :init
-  (setq lsp-inhibit-message nil
-        lsp-message-project-root-warning nil)
   :hook (lsp-mode . company-mode)
   :hook (company-mode . company-box-mode)
   :bind (:map company-active-map
@@ -170,7 +192,6 @@
 
 (use-package! smartparens
   :init
-  (smartparens-global-mode -1)
   (map! :map smartparens-mode-map
         "C-M-f" #'sp-forward-sexp
         "C-M-b" #'sp-backward-sexp)
@@ -185,7 +206,6 @@
   :after org)
 
 (use-package! magit
-  :ensure t
   :config
   (setq magit-git-global-arguments
    `("--no-pager"
@@ -305,34 +325,11 @@
   (map! :map vertico-map "C-l" '+vertico/enter-or-preview))
 
 (use-package ultra-scroll
-  ;:load-path "~/code/emacs/ultra-scroll" ; if you git clone'd instead of package-vc-install
   :init
   (setq scroll-conservatively 101 ; important!
         scroll-margin 0)
   :config
   (ultra-scroll-mode 1))
-
-;; (use-package! copilot
-;;   :init
-;;   (exec-path-from-shell-initialize)
-;;   (doom/reload-env)
-;;   :hook (prog-mode . copilot-mode)
-;;   :bind (:map copilot-completion-map
-;;               ("C-l" . 'copilot-accept-completion))
-
-;;   :config
-;;   (defun extract-port-from-url (url)
-;;    "Extract the port number from the given URL."
-;;    (if (string-match "http://[^:]+:\\([0-9]+\\)" url)
-;;        (match-string 1 url)
-;;      (error "No port found in URL")))
-;;   (add-to-list 'copilot-indentation-alist '(prog-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(org-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(text-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(closure-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode . 2))
-;;   (setq copilot-indent-offset-warning-disable t)
-;;   (setq copilot-network-proxy '(:host "127.0.0.1" :port 20000))) ;; hard coded from nixfiles
 
 (defun my/scratch-buffer-shortcut()
   "Open scratch buffer as a popup window."
@@ -340,16 +337,6 @@
   (if (string-equal (buffer-name) "*doom:scratch*")
       (delete-window)
       (doom/open-scratch-buffer)))
-
-(defun align-non-space (BEG END)
-  "Align non-space columns in region BEG END."
-  (interactive "r")
-  (align-regexp BEG END "\\(\\s-*\\)\\S-+" 1 1 t))
-
-(defun my/deploy-braindump()
-  "Build braindump's hugo files and upload to TS3."
-  (interactive)
-  (let ((default-directory "~/.org/braindump/")) (shell-command-to-string "make")))
 
 (defun my/dired-view ()
   "View files as HTML."
@@ -359,20 +346,14 @@
     (if (> how-many 0) (xdg-open-files files)
       (my/xdg-open (car files) t))))
 
-(defun my/xdg-open-impl (file &optional async)
-  "Opens FILE with xdg-open. Without optional argument ASYNC, it will wait for the file to finish playing or review."
-  (let ((command (format "'%s' '%s'" (if (eq system-type 'darwin) "open" "xdg-open") file)))
-    (if async
-     (async-shell-command command)
-     (shell-command command))))
-
-(defun my/xdg-open-files (files)
-  "Opens FILES with xdg-open one by one, waiting for each to finish."
-  (dolist (file files)
-    (my/xdg-open-impl file)))
-
 (defun my/xdg-open (file)
   (interactive "FFile to open: ")
+  (defun my/xdg-open-impl (file &optional async)
+   "Opens FILE with xdg-open. Without optional argument ASYNC, it will wait for the file to finish playing or review."
+   (let ((command (format "'%s' '%s'" (if (eq system-type 'darwin) "open" "xdg-open") file)))
+     (if async
+      (async-shell-command command)
+      (shell-command command))))
   (my/xdg-open-impl (file-truename file) t))
 
 (map!
@@ -383,7 +364,6 @@
     ;; [f8] #' reserved for compiler explorer
     [f9] #'my/scratch-buffer-shortcut
 
-    "M-/" #'comment-line
     ;; undo-redo
     "M-z" #'undo-redo
     "C-z" #'undo-only
@@ -561,8 +541,6 @@
                                    (electric-pair-post-self-insert-function)
                                    (indent-according-to-mode)))
 
-;;(define-key minibuffer-inactive-mode-map [mouse-1] #'ignore)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UNPACKED ;;;;;;;;;
 (defun quicker-fix ()
@@ -583,10 +561,6 @@
 
 (setq vterm-shell "zsh")
 
-(use-package treesit-auto
-  :config
-  (global-treesit-auto-mode))
-
 (defun rustic-mode-auto-save-hook ()
   "Enable auto-saving in rustic-mode buffers."
   (when buffer-file-name
@@ -605,27 +579,19 @@
           (lambda ()
             (add-hook 'before-save-hook #'my/python-lsp-fix-and-format-on-save nil t)))
 
-(use-package! claudemacs
-  :config
-  (setq claudemacs-default-tool 'codex))
+;; (use-package! copilot
+;;   :init
+;;   (exec-path-from-shell-initialize)
+;;   (doom/reload-env)
+;;   :hook (prog-mode . copilot-mode)
+;;   :bind (:map copilot-completion-map
+;;               ("C-l" . 'copilot-accept-completion))
 
-(after! eat
-  (map! :map eat-mode-map
-        "C-c x" #'claudemacs-transient-menu)
-  (when (boundp 'eat-semi-char-mode-map)
-    (define-key eat-semi-char-mode-map (kbd "C-o") #'other-window))
-  (when (boundp 'eat-char-mode-map)
-    (define-key eat-char-mode-map (kbd "C-o") #'other-window))
-  (when (boundp 'eat-line-mode-map)
-    (define-key eat-line-mode-map (kbd "C-o") #'other-window))
-  (when (boundp 'eat-semi-char-mode-map)
-    (map! :map eat-semi-char-mode-map
-        "C-c C-t" #'eat-line-mode))
-  (when (boundp 'eat-line-mode-map)
-    (map! :map eat-line-mode-map
-        "C-c C-t" #'eat-semi-char-mode)))
-
-(after! lsp-clangd
-  (setq lsp-clients-clangd-args
-   '("--background-index"
-     "--query-driver=/home/weineng/.nix-profile/bin/clang++,/nix/store/*/bin/clang++,/nix/store/*/bin/g++")))
+;;   :config
+;;   (add-to-list 'copilot-indentation-alist '(prog-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(org-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(text-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(closure-mode . 2))
+;;   (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode . 2))
+;;   (setq copilot-indent-offset-warning-disable t)
+;;   (setq copilot-network-proxy '(:host "127.0.0.1" :port 20000))) ;; hard coded from nixfiles
