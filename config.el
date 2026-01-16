@@ -624,3 +624,8 @@
   (when (boundp 'eat-line-mode-map)
     (map! :map eat-line-mode-map
         "C-c C-t" #'eat-semi-char-mode)))
+
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+   '("--background-index"
+     "--query-driver=/home/weineng/.nix-profile/bin/clang++,/nix/store/*/bin/clang++,/nix/store/*/bin/g++")))
