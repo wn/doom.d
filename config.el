@@ -2,7 +2,7 @@
 (setq user-full-name "Ang Wei Neng"
       user-mail-address "weineng.a@gmail.com"
       doom-scratch-buffer-major-mode 'org-mode
-      doom-font (font-spec :family "JetBrains Mono" :size 28 :weight 'light)
+      doom-font (font-spec :family "JetBrains Mono" :size 30 :weight 'light)
       doom-big-font (font-spec :family "JetBrains Mono" :size 35)
       doom-variable-pitch-font (font-spec :family "Roboto" :weight 'light)
       doom-serif-font (font-spec :family "Iosevka" :weight 'light)
@@ -77,7 +77,8 @@
 (use-package! clang-format
   :config
   (setq clang-format-style "file"
-        clang-format-fallback-style "google")
+      clang-format-fallback-style
+      "{BasedOnStyle: Google, IndentWidth: 4, TabWidth: 4, UseTab: Never}")
   (defun my/find-clang-format-file ()
    "Recursively search for a .clang-format file in the parent directories."
    (let ((dir (locate-dominating-file default-directory ".clang-format")))
@@ -139,6 +140,7 @@
 (after! lsp-clangd
   (setq lsp-clients-clangd-args
    '("--background-index"
+     "--log=verbose"
      "--query-driver=/home/weineng/.nix-profile/bin/clang++,/nix/store/*/bin/clang++,/nix/store/*/bin/g++")))
 
 (use-package! ox-reveal
@@ -206,6 +208,7 @@
   :after org)
 
 (use-package! magit
+  :after nerd-icons
   :config
   (setq magit-git-global-arguments
    `("--no-pager"
@@ -214,8 +217,7 @@
      "-c" "color.ui=false"
      "-c" "color.diff=false"))
   (map!"C-c B" #'magit-blame-addition
-       "C-c g g" #'magit-status)
-  :after nerd-icons
+       "C-c g" #'magit-status)
   :custom
   (magit-format-file-function #'magit-format-file-nerd-icons)
   :init
@@ -316,7 +318,7 @@
   :commands (disaster)
   :init
   (setq disaster-cxxflags "-O0 -march=native -std=c++2a -g"
-        disaster-cxx "g++"
+        disaster-cxx "c++"
         disaster-cpp-regexp "\\(h\\|c\\|cc\\|hh\\|hpp\\)$"
         disaster-find-build-root-functions '(projectile-acquire-root)))
 
