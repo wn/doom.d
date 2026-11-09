@@ -42,8 +42,9 @@
 (package! x86-lookup)
 (package! xclip)
 (package! zoom-window)
-(package! claudemacs
-  :recipe (:host github :repo "cpoile/claudemacs"))
 (package! inheritenv)
 (package! eat)
 (package! exec-path-from-shell)
+(package! eca :recipe (:host github :repo "editor-code-assistant/eca-emacs" :files ("*.el")))
+(package! claude-code-ide
+  :recipe (:host github :repo "manzaltu/claude-code-ide.el"))

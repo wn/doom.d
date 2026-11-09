@@ -38,25 +38,6 @@
   :config
   (global-treesit-auto-mode))
 
-(use-package! claudemacs
-  :config
-  (setq claudemacs-default-tool 'codex)
-  (after! eat
-   (map! :map eat-mode-map
-         "C-c x" #'claudemacs-transient-menu)
-   (when (boundp 'eat-semi-char-mode-map)
-     (define-key eat-semi-char-mode-map (kbd "C-o") #'other-window))
-   (when (boundp 'eat-char-mode-map)
-     (define-key eat-char-mode-map (kbd "C-o") #'other-window))
-   (when (boundp 'eat-line-mode-map)
-     (define-key eat-line-mode-map (kbd "C-o") #'other-window))
-   (when (boundp 'eat-semi-char-mode-map)
-     (map! :map eat-semi-char-mode-map
-         "C-c C-t" #'eat-line-mode))
-   (when (boundp 'eat-line-mode-map)
-     (map! :map eat-line-mode-map
-         "C-c C-t" #'eat-semi-char-mode))))
-
 (use-package x86-lookup
   :config
   (defun my/x86-lookup-at-point ()
@@ -91,13 +72,16 @@
      (clang-format-buffer)))
  (add-hook 'before-save-hook 'my/clang-format-before-save))
 
+(defun my/c++-gcc16-reflection-flycheck ()
+  "Use GCC 16 diagnostics for C++26 reflection buffers."
+  (setq-local flycheck-checker 'c/c++-gcc
+              flycheck-gcc-language-standard "c++26"
+              flycheck-gcc-args '("-freflection")))
+
 (use-package! flycheck
-  :init
+  :hook ((c++-mode c++-ts-mode) . my/c++-gcc16-reflection-flycheck)
   :config
-  (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
-  (setq flycheck-clang-language-standard "c++2b"
-        flycheck-gcc-language-standard "c++2b"
-        flycheck-clang-args '("-std=c++2b" "-O0" "-march=native" "-g")))
+  (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc)))
 
 (use-package orderless
   :custom
@@ -129,7 +113,8 @@
         lsp-lens-enable nil
         lsp-eldoc-enable-hover t
         lsp-inhibit-message t
-        lsp-message-project-root-warning t))
+        lsp-message-project-root-warning t
+        lsp-diagnostics-disabled-modes '(c++-mode c++-ts-mode)))
 
 (after! lsp-ui
   (setq lsp-ui-sideline-enable nil
@@ -581,19 +566,34 @@
           (lambda ()
             (add-hook 'before-save-hook #'my/python-lsp-fix-and-format-on-save nil t)))
 
-;; (use-package! copilot
-;;   :init
-;;   (exec-path-from-shell-initialize)
-;;   (doom/reload-env)
-;;   :hook (prog-mode . copilot-mode)
-;;   :bind (:map copilot-completion-map
-;;               ("C-l" . 'copilot-accept-completion))
-
+;; (use-package! claude-code-ide
+;;   :bind ("C-c C-'" . claude-code-ide-menu) ; Set your favorite keybinding
 ;;   :config
-;;   (add-to-list 'copilot-indentation-alist '(prog-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(org-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(text-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(closure-mode . 2))
-;;   (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode . 2))
-;;   (setq copilot-indent-offset-warning-disable t)
-;;   (setq copilot-network-proxy '(:host "127.0.0.1" :port 20000))) ;; hard coded from nixfiles
+;;   (claude-code-ide-emacs-tools-setup) ; Optionally enable Emacs MCP tools
+;;   (setq claude-code-ide-terminal-backend 'vterm)
+;;   ;; Adjust the terminal initialization delay (default is 0.1 seconds)
+;;   (setq claude-code-ide-terminal-initialization-delay 0.15))
+
+(use-package! eca
+  :bind ("C-c C-'" . 'eca-transient-menu)
+  :config
+ (setq eca-chat-custom-model "anthropic/claude-opus-5-5"))
+  
+
+(setq window-divider-default-right-width 6
+      window-divider-default-bottom-width 6
+      window-divider-default-places t)
+(window-divider-mode 1)
+
+;; (after! eca-chat
+;;   (defun my/eca-cursor-header ()
+;;     (when-let* ((ctx eca-chat--cursor-context)
+;;                 (pos (plist-get ctx :position))
+;;                 (s (plist-get pos :start))
+;;                 (e (plist-get pos :end)))
+;;       (format " 👁 %s  %d:%d → %d:%d"
+;;               (file-name-nondirectory (plist-get ctx :path))
+;;               (plist-get s :line) (plist-get s :character)
+;;               (plist-get e :line) (plist-get e :character))))
+;;   (add-hook 'eca-chat-mode-hook
+;;             (lambda () (setq header-line-format '(:eval (my/eca-cursor-header))))))
